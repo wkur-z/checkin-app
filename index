@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Check-In">
+<title>Check-In</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f5; --bg3: #eeeeee;
+    --text: #111111; --text2: #666666; --text3: #999999;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.2);
+    --radius: 8px; --radius-lg: 14px;
+    --friction: #D85A30; --gold: #639922; --question: #7F77DD;
+    --question-bg: #EEEDFE; --question-text: #534AB7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a; --bg2: #252525; --bg3: #303030;
+      --text: #f0f0f0; --text2: #aaaaaa; --text3: #666666;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --question-bg: #2a2850; --question-text: #AFA9EC;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding-bottom: env(safe-area-inset-bottom); }
+  .app { max-width: 480px; margin: 0 auto; padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom)); }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 0.5px solid var(--border); }
+  .week-num { font-size: 17px; font-weight: 600; color: var(--text); }
+  .week-theme { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .week-nav { display: flex; align-items: center; gap: 6px; }
+  .week-nav button { background: transparent; border: none; cursor: pointer; color: var(--text2); font-size: 22px; padding: 2px 4px; line-height: 1; }
+  .week-badge { font-size: 12px; color: var(--text2); background: var(--bg2); padding: 4px 10px; border-radius: var(--radius); border: 0.5px solid var(--border); }
+  .user-tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .tab { flex: 1; padding: 9px; text-align: center; font-size: 14px; border: 0.5px solid var(--border); border-radius: var(--radius); cursor: pointer; background: transparent; color: var(--text2); font-family: inherit; }
+  .tab.active { background: var(--bg2); color: var(--text); font-weight: 500; border-color: var(--border2); }
+  .section { margin-bottom: 1.25rem; background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .section-header { padding: 12px 16px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .section-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-friction { background: var(--friction); }
+  .dot-gold { background: var(--gold); }
+  .dot-question { background: var(--question); }
+  .section-title { font-size: 14px; font-weight: 600; flex: 1; color: var(--text); }
+  .section-body { padding: 14px 16px; }
+  .prompts-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+  .prompt-chips { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .prompt-chip { font-size: 13px; color: var(--text2); background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 8px 12px; cursor: pointer; text-align: left; font-style: italic; line-height: 1.5; font-family: inherit; }
+  .prompt-chip:active { background: var(--bg3); }
+  hr.divider { border: none; border-top: 0.5px solid var(--border); margin: 10px 0; }
+  .notes-label { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+  .notes-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .note-item { display: flex; align-items: flex-start; gap: 10px; }
+  .note-radio { margin-top: 3px; flex-shrink: 0; cursor: pointer; accent-color: var(--question); width: 16px; height: 16px; }
+  .note-text { font-size: 14px; color: var(--text); line-height: 1.5; flex: 1; }
+  .note-item.selected .note-text { font-weight: 500; }
+  .add-note-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .add-note-row input { flex: 1; font-size: 14px; padding: 8px 12px; background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: inherit; outline: none; }
+  .add-note-row input:focus { border-color: var(--border2); }
+  .add-note-row button { font-size: 14px; padding: 8px 14px; border: 0.5px solid var(--border); border-radius: var(--radius); background: transparent; color: var(--text2); cursor: pointer; font-family: inherit; }
+  .add-note-row button:active { background: var(--bg2); }
+  .elaborate-prompt { font-size: 12px; color: var(--text3); font-style: italic; margin-bottom: 6px; line-height: 1.5; }
+  textarea { width: 100%; font-size: 14px; padding: 10px 12px; background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius); color: var(--text); resize: none; font-family: inherit; line-height: 1.6; outline: none; }
+  textarea:focus { border-color: var(--border2); }
+  .voice-btn { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); background: transparent; border: 0.5px solid var(--border); border-radius: var(--radius); padding: 5px 12px; cursor: pointer; margin-bottom: 8px; font-family: inherit; width: fit-content; }
+  .voice-btn.recording { color: var(--friction); border-color: var(--friction); }
+  .mic-dot { width: 8px; height: 8px; background: currentColor; border-radius: 50%; }
+  .science-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .science-tag { font-size: 11px; color: var(--question-text); background: var(--question-bg); padding: 3px 9px; border-radius: var(--radius); font-weight: 500; }
+  .ref-btn { font-size: 11px; color: var(--text2); background: transparent; border: 0.5px solid var(--border); border-radius: var(--radius); padding: 3px 9px; cursor: pointer; font-family: inherit; }
+  .refs-panel { background: var(--bg2); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; font-size: 12px; color: var(--text2); line-height: 1.7; display: none; }
+  .refs-panel.open { display: block; }
+  .refs-panel strong { color: var(--text); font-weight: 600; }
+  .ref-entry { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 0.5px solid var(--border); }
+  .ref-entry:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .question-text { font-size: 14px; color: var(--text); line-height: 1.7; margin-bottom: 12px; font-style: italic; }
+  .checkin-btn { width: 100%; margin-top: 1rem; padding: 14px; font-size: 15px; font-weight: 600; background: transparent; border: 0.5px solid var(--border2); border-radius: var(--radius-lg); cursor: pointer; color: var(--text); font-family: inherit; }
+  .checkin-btn:active { background: var(--bg2); }
+  .saved-pill { text-align: center; margin-top: 10px; font-size: 11px; color: var(--text3); }
+  .saved-pill.flash { color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div>
+      <div class="week-num" id="weekTitle">Week 1</div>
+      <div class="week-theme" id="weekTheme"></div>
+    </div>
+    <div class="week-nav">
+      <button onclick="changeWeek(-1)">&#8249;</button>
+      <div class="week-badge" id="weekBadge">1 of 8</div>
+      <button onclick="changeWeek(1)">&#8250;</button>
+    </div>
+  </div>
+
+  <div class="user-tabs">
+    <button class="tab active" onclick="switchUser('you', this)">You</button>
+    <button class="tab" onclick="switchUser('partner', this)">Partner</button>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot dot-friction"></div>
+      <div class="section-title">Friction this week</div>
+    </div>
+    <div class="section-body">
+      <div class="prompts-label">Tap a prompt to start a note</div>
+      <div class="prompt-chips">
+        <button class="prompt-chip" onclick="prefill('friction', 'Something I didn\'t say but kept thinking about was ')">Something I didn't say but kept thinking about was...</button>
+        <button class="prompt-chip" onclick="prefill('friction', 'A moment I overthought or assumed the worst was ')">A moment I overthought or assumed the worst was...</button>
+        <button class="prompt-chip" onclick="prefill('friction', 'Something that kept coming up in my head was ')">Something that kept coming up in my head was...</button>
+      </div>
+      <hr class="divider">
+      <div class="notes-label">Your notes — pick one at check-in</div>
+      <div class="notes-list" id="frictionNotes"></div>
+      <div class="add-note-row">
+        <input type="text" id="frictionInput" placeholder="Or type your own..." onkeydown="if(event.key==='Enter')addNote('friction')" />
+        <button onclick="addNote('friction')">Add</button>
+      </div>
+      <div id="frictionElaborate" style="display:none;">
+        <div class="elaborate-prompt">Underneath that, what I actually needed was...</div>
+        <button class="voice-btn" id="frictionVoiceBtn" onclick="toggleVoice('frictionElabText','frictionVoiceBtn')"><div class="mic-dot"></div> Voice</button>
+        <textarea id="frictionElabText" rows="3" placeholder="One or two sentences..." oninput="saveElabs()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot dot-gold"></div>
+      <div class="section-title">Gold star moments</div>
+    </div>
+    <div class="section-body">
+      <div class="prompts-label">Tap a prompt to start a note</div>
+      <div class="prompt-chips">
+        <button class="prompt-chip" onclick="prefill('gold', 'A moment I felt close to you was ')">A moment I felt close to you was...</button>
+        <button class="prompt-chip" onclick="prefill('gold', 'Something you did that I didn\'t acknowledge enough was ')">Something you did that I didn't acknowledge enough was...</button>
+        <button class="prompt-chip" onclick="prefill('gold', 'A small thing that actually meant a lot was ')">A small thing that actually meant a lot was...</button>
+      </div>
+      <hr class="divider">
+      <div class="notes-label">Your notes — pick one at check-in</div>
+      <div class="notes-list" id="goldNotes"></div>
+      <div class="add-note-row">
+        <input type="text" id="goldInput" placeholder="Or type your own..." onkeydown="if(event.key==='Enter')addNote('gold')" />
+        <button onclick="addNote('gold')">Add</button>
+      </div>
+      <div id="goldElaborate" style="display:none;">
+        <div class="elaborate-prompt">Something you did that I want you to know mattered was...</div>
+        <button class="voice-btn" id="goldVoiceBtn" onclick="toggleVoice('goldElabText','goldVoiceBtn')"><div class="mic-dot"></div> Voice</button>
+        <textarea id="goldElabText" rows="3" placeholder="One or two sentences..." oninput="saveElabs()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot dot-question"></div>
+      <div class="section-title">This week's question</div>
+    </div>
+    <div class="section-body">
+      <div class="science-row">
+        <span class="science-tag" id="scienceTag"></span>
+        <button class="ref-btn" onclick="toggleRefs()">Sources</button>
+      </div>
+      <div class="refs-panel" id="refsPanel"></div>
+      <div class="question-text" id="qText"></div>
+      <div class="notes-label">Your notes — pick one at check-in</div>
+      <div class="notes-list" id="questionNotes"></div>
+      <div class="add-note-row">
+        <input type="text" id="questionInput" placeholder="Add a thought..." onkeydown="if(event.key==='Enter')addNote('question')" />
+        <button onclick="addNote('question')">Add</button>
+      </div>
+      <div id="questionElaborate" style="display:none;">
+        <div class="elaborate-prompt">What I want to share with my partner is...</div>
+        <button class="voice-btn" id="questionVoiceBtn" onclick="toggleVoice('questionElabText','questionVoiceBtn')"><div class="mic-dot"></div> Voice</button>
+        <textarea id="questionElabText" rows="3" placeholder="One or two sentences..." oninput="saveElabs()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <button class="checkin-btn" onclick="doCheckin()">Ready for check-in — copy my summary</button>
+  <div class="saved-pill" id="savedPill">All notes saved to this device</div>
+</div>
+
+<script>
+const weeks = [
+  { theme: "Appreciation & fondness", science: "Gottman Method", question: "What's one thing your partner did this week that you genuinely appreciated, and why did it matter to you?", refs: [{ title: "The Seven Principles for Making Marriage Work", author: "John Gottman & Nan Silver (1999)", note: "Introduces the fondness and admiration system as a core predictor of relationship stability." }, { title: "The Relationship Cure", author: "John Gottman (2001)", note: "Covers bids for connection and how appreciation reinforces emotional bonds." }, { title: "Counting blessings vs. burdens", author: "Emmons & McCullough, Journal of Personality and Social Psychology (2003)", note: "Expressing specific gratitude increases relational satisfaction." }] },
+  { theme: "Emotional availability", science: "Emotionally Focused Therapy (EFT)", question: "Was there a moment this week where you needed your partner and felt either supported or alone? What did that feel like?", refs: [{ title: "Hold Me Tight", author: "Sue Johnson (2008)", note: "Centers on the need for emotional responsiveness and accessibility in couples." }, { title: "The Practice of Emotionally Focused Couple Therapy", author: "Sue Johnson (2004)", note: "Clinical framework for identifying moments of emotional disconnection and repair." }, { title: "Attachment theory in adult relationships", author: "Hazan & Shaver, Psychological Review (1987)", note: "Adult romantic bonds mirror early attachment patterns." }] },
+  { theme: "Conflict patterns", science: "Gottman Method", question: "Was there a recurring tension this week? What do you think was really underneath it — not the surface issue, but the deeper need?", refs: [{ title: "Why Marriages Succeed or Fail", author: "John Gottman (1994)", note: "Identifies the Four Horsemen (criticism, contempt, defensiveness, stonewalling) as key conflict predictors." }, { title: "The Science of Trust", author: "John Gottman (2011)", note: "Covers how unmet needs drive recurring conflict cycles." }, { title: "Nonviolent Communication", author: "Marshall Rosenberg (2003)", note: "Framework for identifying the unmet need beneath surface-level friction." }] },
+  { theme: "Shared vision", science: "Gottman — Shared Meaning System", question: "Is there something you're excited about in the next few months — personally or as a couple — that you haven't fully talked about?", refs: [{ title: "The Seven Principles for Making Marriage Work", author: "John Gottman & Nan Silver (1999)", note: "Chapter on Creating Shared Meaning — rituals, goals, and life narratives as relationship glue." }, { title: "Self-expansion theory", author: "Aron & Aron, Journal of Personality and Social Psychology (1986)", note: "Couples who pursue novel shared experiences report higher satisfaction." }] },
+  { theme: "Bids for connection", science: "Gottman Method", question: "Think of a moment this week where one of you reached out for connection — big or small. Was it received? What happened?", refs: [{ title: "The Relationship Cure", author: "John Gottman (2001)", note: "Coined the concept of bids for connection — small emotional outreach attempts that build or erode trust." }, { title: "Turning toward vs. turning away", author: "Gottman & Driver, Journal of Family Psychology (2005)", note: "Couples who turned toward bids 86% of the time stayed together vs. 33% in divorced couples." }] },
+  { theme: "Security & trust", science: "Attachment Theory", question: "Is there anything you've been holding back this week because you weren't sure how it would land? What made it hard to say?", refs: [{ title: "Attached", author: "Amir Levine & Rachel Heller (2010)", note: "Guide to adult attachment styles and how they shape communication." }, { title: "Hold Me Tight", author: "Sue Johnson (2008)", note: "Frames emotional withholding as a survival response to perceived attachment threat." }, { title: "Adult attachment and couples therapy", author: "Johnson & Whiffen, Clinical Psychology Review (1999)", note: "Attachment security links to emotional openness in relationships." }] },
+  { theme: "Stress & support", science: "Gottman — Stress-Reducing Conversation", question: "What's been weighing on you outside of the relationship this week, and what kind of support would actually help?", refs: [{ title: "The Seven Principles for Making Marriage Work", author: "John Gottman & Nan Silver (1999)", note: "Describes the stress-reducing conversation ritual as a daily relationship health habit." }, { title: "Perceived partner responsiveness", author: "Reis et al., Journal of Personality and Social Psychology (2004)", note: "Feeling understood by a partner buffers stress and increases intimacy." }] },
+  { theme: "Gratitude & growth", science: "Positive Psychology", question: "What's one way you've seen yourself or your partner grow recently — in the relationship or personally?", refs: [{ title: "Flourish", author: "Martin Seligman (2011)", note: "Establishes gratitude and growth recognition as pillars of wellbeing." }, { title: "Counting blessings vs. burdens", author: "Emmons & McCullough, Journal of Personality and Social Psychology (2003)", note: "Weekly gratitude journaling increases relationship satisfaction and optimism." }, { title: "Perceived partner growth", author: "Neff & Karney, Journal of Personality and Social Psychology (2005)", note: "Partners who notice each other's growth report higher long-term satisfaction." }] }
+];
+
+let currentWeek = parseInt(localStorage.getItem('ci_currentWeek') || '1');
+let currentUser = localStorage.getItem('ci_currentUser') || 'you';
+let recognition = null;
+let activeRecording = null;
+
+function sk(u,w,s){return 'ci_'+u+'_w'+w+'_'+s;}
+function loadState(u,w,s){try{const r=localStorage.getItem(sk(u,w,s));return r?JSON.parse(r):{notes:[],selected:-1,elab:''};}catch(e){return{notes:[],selected:-1,elab:''};}}
+function saveState(u,w,s,d){try{localStorage.setItem(sk(u,w,s),JSON.stringify(d));}catch(e){}flashSaved();}
+
+function flashSaved(){
+  const el=document.getElementById('savedPill');
+  el.classList.add('flash');el.textContent='Saved';
+  setTimeout(()=>{el.classList.remove('flash');el.textContent='All notes saved to this device';},1200);
+}
+
+function prefill(section,text){
+  const input=document.getElementById(section+'Input');
+  input.value=text;input.focus();
+  setTimeout(()=>input.setSelectionRange(text.length,text.length),10);
+}
+
+function changeWeek(dir){
+  saveElabs();
+  currentWeek=((currentWeek-1+dir+8)%8)+1;
+  localStorage.setItem('ci_currentWeek',currentWeek);
+  document.getElementById('refsPanel').classList.remove('open');
+  render();
+}
+
+function switchUser(user,el){
+  saveElabs();currentUser=user;
+  localStorage.setItem('ci_currentUser',user);
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');render();
+}
+
+function saveElabs(){
+  ['friction','gold','question'].forEach(s=>{
+    const el=document.getElementById(s+'ElabText');
+    if(!el)return;
+    const st=loadState(currentUser,currentWeek,s);
+    if(st.elab!==el.value){st.elab=el.value;saveState(currentUser,currentWeek,s,st);}
+  });
+}
+
+function render(){
+  const w=weeks[currentWeek-1];
+  document.getElementById('weekTitle').textContent='Week '+currentWeek;
+  document.getElementById('weekTheme').textContent=w.theme;
+  document.getElementById('weekBadge').textContent=currentWeek+' of 8';
+  document.getElementById('scienceTag').textContent=w.science;
+  document.getElementById('qText').textContent=w.question;
+  const rp=document.getElementById('refsPanel');
+  rp.innerHTML=w.refs.map(r=>'<div class="ref-entry"><strong>'+r.title+'</strong><br>'+r.author+'<br>'+r.note+'</div>').join('');
+  renderSection('friction');renderSection('gold');renderSection('question');
+}
+
+function renderSection(section){
+  const st=loadState(currentUser,currentWeek,section);
+  const list=document.getElementById(section+'Notes');
+  list.innerHTML='';
+  st.notes.forEach((note,i)=>{
+    const row=document.createElement('div');
+    row.className='note-item'+(st.selected===i?' selected':'');
+    const radio=document.createElement('input');
+    radio.type='radio';radio.className='note-radio';
+    radio.name=section+'_r_'+currentUser+'_'+currentWeek;
+    radio.checked=st.selected===i;
+    radio.addEventListener('change',()=>selectNote(section,i));
+    const span=document.createElement('span');
+    span.className='note-text';span.textContent=note;
+    row.appendChild(radio);row.appendChild(span);list.appendChild(row);
+  });
+  document.getElementById(section+'Elaborate').style.display=st.selected>=0?'block':'none';
+  const et=document.getElementById(section+'ElabText');
+  if(et)et.value=st.elab||'';
+}
+
+function addNote(section){
+  const input=document.getElementById(section+'Input');
+  const val=input.value.trim();if(!val)return;
+  const st=loadState(currentUser,currentWeek,section);
+  st.notes.push(val);saveState(currentUser,currentWeek,section,st);
+  input.value='';renderSection(section);
+}
+
+function selectNote(section,i){
+  const st=loadState(currentUser,currentWeek,section);
+  st.selected=i;saveState(currentUser,currentWeek,section,st);
+  renderSection(section);
+}
+
+function toggleRefs(){document.getElementById('refsPanel').classList.toggle('open');}
+
+function toggleVoice(textareaId,btnId){
+  const btn=document.getElementById(btnId);
+  if(activeRecording===btnId){if(recognition)recognition.stop();return;}
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){alert('Voice input works in Safari on iOS 15+ or Chrome.');return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();recognition.continuous=true;recognition.interimResults=true;
+  recognition.onstart=()=>{activeRecording=btnId;btn.classList.add('recording');btn.innerHTML='<div class="mic-dot"></div> Stop';};
+  recognition.onresult=(e)=>{let t='';for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;document.getElementById(textareaId).value=t;};
+  recognition.onend=()=>{activeRecording=null;btn.classList.remove('recording');btn.innerHTML='<div class="mic-dot"></div> Voice';saveElabs();};
+  recognition.start();
+}
+
+function doCheckin(){
+  saveElabs();
+  const labels={friction:'Friction',gold:'Gold star',question:'Question response'};
+  let lines=['Week '+currentWeek+' check-in — '+weeks[currentWeek-1].theme+'\n'];
+  ['friction','gold','question'].forEach(s=>{
+    const st=loadState(currentUser,currentWeek,s);
+    if(st.selected>=0){
+      lines.push(labels[s]+': '+st.notes[st.selected]);
+      if(st.elab)lines.push('  → '+st.elab);
+    }
+  });
+  const text=lines.join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>{
+      const btn=document.querySelector('.checkin-btn');
+      btn.textContent='Copied to clipboard!';
+      setTimeout(()=>{btn.textContent='Ready for check-in — copy my summary';},2000);
+    });
+  } else {
+    const ta=document.createElement('textarea');ta.value=text;
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn=document.querySelector('.checkin-btn');
+    btn.textContent='Copied!';
+    setTimeout(()=>{btn.textContent='Ready for check-in — copy my summary';},2000);
+  }
+}
+
+render();
+</script>
+</body>
+</html>
